@@ -5,6 +5,7 @@ namespace TCG\Voyager;
 use Arrilot\Widgets\Facade as Widget;
 use Arrilot\Widgets\ServiceProvider as WidgetServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\View;
@@ -13,6 +14,11 @@ use Intervention\Image\ImageServiceProvider;
 use TCG\Voyager\Facades\Voyager as VoyagerFacade;
 use TCG\Voyager\FormFields\After\DescriptionHandler;
 use TCG\Voyager\Http\Middleware\VoyagerAdminMiddleware;
+
+use TCG\Voyager\Models\Menu;
+use TCG\Voyager\Models\User;
+use TCG\Voyager\Translator\Collection as TranslatorCollection;
+
 
 class VoyagerServiceProvider extends ServiceProvider
 {
@@ -84,6 +90,8 @@ class VoyagerServiceProvider extends ServiceProvider
         $event->listen('voyager.alerts.collecting', function () {
             $this->addStorageSymlinkAlert();
         });
+
+        $this->bootTranslatorCollectionMacros();
     }
 
     /**
@@ -160,6 +168,19 @@ class VoyagerServiceProvider extends ServiceProvider
 
             $this->app->bind("voyager.alert.components.{$component}", $class);
         }
+    }
+
+    protected function bootTranslatorCollectionMacros()
+    {
+        Collection::macro('translate', function () {
+            $transtors = [];
+
+            foreach ($this->all() as $item) {
+                $transtors[] = call_user_func_array([$item, 'translate'], func_get_args());
+            }
+
+            return new TranslatorCollection($transtors);
+        });
     }
 
     /**
